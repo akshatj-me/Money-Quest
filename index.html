@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Money Quest">
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Money Quest</title>
+<style>
+:root{--bg:#0b1220;--card:#111a2b;--card2:#172238;--line:#24324b;--text:#f6f8fc;--muted:#9aa9c2;--accent:#7dd3fc;--good:#86efac;--bad:#fda4af}
+*{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(84px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit} button{cursor:pointer}
+.app{max-width:760px;margin:auto;padding:12px}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:6px 0 14px}
+h1{margin:0;font-size:24px}.sub{font-size:13px;color:var(--muted);margin-top:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px}.soft{background:var(--card2);border-radius:14px;padding:12px}
+.grid{display:grid;gap:10px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.row{display:flex;justify-content:space-between;gap:12px;align-items:center}.wrap{flex-wrap:wrap}
+.label{font-size:12px;color:var(--muted)}.value{font-size:20px;font-weight:800;margin-top:3px}.section{font-size:16px;font-weight:800}.small{font-size:12px;color:var(--muted)}
+.pill{font-size:12px;padding:6px 9px;border-radius:999px;background:var(--card2);color:var(--muted)}.pill.good{color:var(--good)}
+.btn{min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:10px 14px;font-weight:700}.btn.primary{background:var(--accent);color:#082032;border-color:transparent}.btn.danger{color:var(--bad)}.btn.full{width:100%}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:5px} input,select,textarea{width:100%;min-height:44px;border:1px solid var(--line);border-radius:12px;background:#0f192a;color:var(--text);padding:10px 12px}.field{min-width:0}
+.bar{height:10px;background:#20304a;border-radius:999px;overflow:hidden}.bar>i{display:block;height:100%;width:0;background:var(--accent)}
+.view{display:none}.view.active{display:block}.hidden{display:none!important}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(11,18,32,.96);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:flex;gap:6px;justify-content:center}.nav button{flex:1;max-width:180px;min-height:48px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-weight:800}.nav button.active{background:var(--card2);color:var(--text)}
+.txn{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px 0;border-top:1px solid var(--line)}.txn:first-child{border-top:0}.meta{font-size:12px;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.dow{text-align:center;color:var(--muted);font-size:11px}.day{min-height:64px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--text);padding:6px;text-align:left}.day.sel{outline:2px solid var(--accent)}.day .n{font-weight:800;font-size:12px}.day .s{font-size:10px;color:var(--muted);margin-top:8px}
+.milestone{padding:12px 0;border-top:1px solid var(--line)}.milestone:first-child{border-top:0}
+.modalBack{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);display:flex;align-items:flex-end;justify-content:center;padding:16px}.modal{width:min(720px,100%);max-height:90%;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px}
+.radioRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.radioBtn{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:12px}.radioBtn input{width:auto;min-height:auto;margin-right:8px}
+.onboard{max-width:680px;margin:10px auto 100px;padding:12px}.step{display:none}.step.active{display:block}.note{border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:12px;font-size:13px;color:var(--muted)}
+.toast{position:fixed;z-index:70;left:50%;bottom:96px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-size:13px;display:none}
+@media(max-width:480px){.g2{grid-template-columns:1fr}.value{font-size:19px}.app{padding:10px}}
+</style>
+</head>
+<body>
+
+<div id="onboarding" class="onboard hidden">
+  <div class="top"><div><h1>Money Quest</h1><div class="sub">Private-first setup — values stay on this device.</div></div><div class="pill" id="setupStepPill">1 / 3</div></div>
+
+  <section class="card step active" data-step="1">
+    <div class="section">Starting balances</div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="field"><label>Current account</label><input id="obCurrent" type="number" step="0.01"></div>
+      <div class="field"><label>Emergency savings</label><input id="obEmergency" type="number" step="0.01"></div>
+      <div class="field"><label>Gift / earmarked savings</label><input id="obGift" type="number" step="0.01"></div>
+      <div class="field"><label>Current Klarna debt</label><input id="obKlarna" type="number" step="0.01"></div>
+    </div>
+    <button class="btn primary full" data-next="2" style="margin-top:12px">Next</button>
+  </section>
+
+  <section class="card step" data-step="2">
+    <div class="section">Monthly commitments</div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="field"><label>Net salary</label><input id="obSalary" type="number" step="0.01"></div>
+      <div class="field"><label>Current rent share</label><input id="obRent" type="number" step="0.01"></div>
+      <div class="field"><label>Education loan / month</label><input id="obEducation" type="number" step="0.01"></div>
+      <div class="field"><label>Personal loan EMI</label><input id="obPersonal" type="number" step="0.01"></div>
+      <div class="field"><label>Personal-loan payments left</label><input id="obPersonalLeft" type="number" min="0" step="1"></div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn" data-back="1">Back</button><button class="btn primary" data-next="3">Next</button></div>
+  </section>
+
+  <section class="card step" data-step="3">
+    <div class="section">Goal & optional trip</div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="field"><label>Goal / move date</label><input id="obGoalDate" type="date"></div>
+      <div class="field"><label>New rent share from final payday</label><input id="obNewRent" type="number" step="0.01"></div>
+      <div class="field"><label>Move-ready cash target</label><input id="obMoveTarget" type="number" step="0.01"></div>
+      <div class="field"><label>Trip name (optional)</label><input id="obTripName"></div>
+      <div class="field"><label>Trip start</label><input id="obTripStart" type="date"></div>
+      <div class="field"><label>Trip end</label><input id="obTripEnd" type="date"></div>
+      <div class="field"><label>Trip budget</label><input id="obTripBudget" type="number" step="0.01"></div>
+    </div>
+    <div class="note" style="margin-top:12px">Do not enter a future flight or EMI here. Add the flight only when you actually buy it.</div>
+    <div class="row" style="margin-top:12px"><button class="btn" data-back="2">Back</button><button class="btn primary" id="finishSetup">Start</button></div>
+  </section>
+</div>
+
+<div id="mainApp" class="hidden">
+<div class="app">
+  <div class="top"><div><h1>Money Quest</h1><div class="sub">Win the move, one day at a time.</div></div><div class="pill" id="xpPill">0 XP</div></div>
+
+  <section id="todayView" class="view active">
+    <div class="card">
+      <div class="row wrap">
+        <div>
+          <div class="label">TODAY</div>
+          <div id="todayDateBig" style="font-size:22px;font-weight:800;margin-top:2px"></div>
+          <div id="phaseText" class="small" style="margin-top:3px"></div>
+        </div>
+        <div class="pill" id="streakPill">0 day streak</div>
+      </div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="soft"><div class="label">Safe to spend today</div><div class="value" id="safeToday">0 kr</div></div>
+        <div class="soft"><div class="label">Spendable left</div><div class="value" id="spendableLeft">0 kr</div></div>
+        <div class="soft"><div class="label">Spent today</div><div class="value" id="spentToday">0 kr</div></div>
+        <div class="soft"><div class="label">Next salary</div><div class="value" id="nextSalary">—</div></div>
+      </div>
+      <button class="btn primary full" id="quickAddBtn" style="margin-top:12px">＋ Add expense</button>
+    </div>
+
+    <div class="card">
+      <div class="row"><div class="section">Today's mission</div><div class="pill" id="missionStatus">Open</div></div>
+      <div id="missionText" style="margin-top:8px"></div>
+      <button class="btn full" id="completeDayBtn" style="margin-top:12px">Mark today as won</button>
+    </div>
+
+    <div class="card">
+      <div class="row"><div class="section">Your runway</div><span class="small" id="cycleDates"></span></div>
+      <div class="row" style="margin-top:12px"><span class="small">Spendable budget after reserved commitments</span><strong id="cycleBudget">0 kr</strong></div>
+      <div class="row" style="margin-top:7px"><span class="small">Discretionary spending logged</span><strong id="cycleSpent">0 kr</strong></div>
+      <div class="bar" style="margin-top:9px"><i id="cycleBar"></i></div>
+      <div class="small" style="margin-top:8px">Klarna purchases reduce the spending allowance immediately, even if cash leaves later.</div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card"><div class="label">Current account</div><div class="value" id="currentValue">0 kr</div></div>
+      <div class="card"><div class="label">Emergency savings</div><div class="value" id="emergencyValue">0 kr</div></div>
+      <div class="card"><div class="label">Gift / earmarked fund</div><div class="value" id="giftValue">0 kr</div></div>
+      <div class="card"><div class="label">Klarna debt</div><div class="value" id="klarnaValue">0 kr</div><div class="small" id="klarnaSub"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="row wrap"><div class="section">Today’s activity</div><div class="row"><button class="btn hidden" id="salaryBtn">Record salary</button><button class="btn" id="addPaymentBtn">Pay Klarna</button></div></div>
+      <div id="todayTxns" style="margin-top:6px"></div>
+    </div>
+  </section>
+
+  <section id="calendarView" class="view">
+    <div class="card">
+      <div class="row" style="margin-bottom:10px"><button class="btn" id="prevMonth">←</button><strong id="monthTitle"></strong><button class="btn" id="nextMonth">→</button></div>
+      <div class="cal" id="calendar"></div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="section">Selected day</div><span id="selectedDateLabel" class="small"></span></div>
+      <div class="grid g2" style="margin-top:10px"><div class="soft"><div class="label">Spent</div><div class="value" id="selectedSpent">0 kr</div></div><div class="soft"><div class="label">Safe limit</div><div class="value" id="selectedSafe">0 kr</div></div></div>
+      <button class="btn primary full" id="addForSelected" style="margin-top:10px">Add expense for this day</button>
+    </div>
+  </section>
+
+  <section id="planView" class="view">
+    <div class="card"><div class="section">Game board</div><div id="milestones" style="margin-top:8px"></div></div>
+    <div class="card">
+      <div class="row"><div class="section">Mandatory Klarna due</div><button class="btn" id="editMandatoryBtn">Edit</button></div>
+      <div class="small" style="margin-top:4px">Only the mandatory-due amount is reserved from your daily budget.</div>
+      <div id="mandatoryList" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="section">Klarna EMI plans</div><button class="btn" id="newPlanBtn">＋ Plan</button></div>
+      <div class="small" style="margin-top:4px">Use this after you actually buy something on Klarna.</div>
+      <div id="klarnaPlans" style="margin-top:8px"></div>
+    </div>
+    <div id="tripCard" class="card hidden">
+      <div class="section" id="tripTitle">Trip</div>
+      <div class="row" style="margin-top:10px"><span class="small">Trip spending logged</span><strong id="tripSpent">0 kr</strong></div>
+      <div class="row" style="margin-top:7px"><span class="small">Trip budget</span><strong id="tripBudgetDisplay">0 kr</strong></div>
+      <div class="bar" style="margin-top:9px"><i id="tripBar"></i></div>
+    </div>
+  </section>
+
+  <section id="settingsView" class="view">
+    <div class="card">
+      <div class="section">Settings</div>
+      <div class="grid g2" style="margin-top:12px">
+        <div class="field"><label>Net salary</label><input id="setSalary" type="number" step="0.01"></div>
+        <div class="field"><label>Starting current account</label><input id="setCurrent" type="number" step="0.01"></div>
+        <div class="field"><label>Emergency savings</label><input id="setEmergency" type="number" step="0.01"></div>
+        <div class="field"><label>Gift / earmarked savings</label><input id="setGift" type="number" step="0.01"></div>
+        <div class="field"><label>Starting Klarna debt</label><input id="setKlarna" type="number" step="0.01"></div>
+        <div class="field"><label>Current rent share</label><input id="setRent" type="number" step="0.01"></div>
+        <div class="field"><label>Education loan</label><input id="setEducation" type="number" step="0.01"></div>
+        <div class="field"><label>Personal loan EMI</label><input id="setPersonal" type="number" step="0.01"></div>
+        <div class="field"><label>Personal-loan payments left</label><input id="setPersonalLeft" type="number" min="0" step="1"></div>
+        <div class="field"><label>Goal date</label><input id="setGoalDate" type="date"></div>
+        <div class="field"><label>New rent share</label><input id="setNewRent" type="number" step="0.01"></div>
+        <div class="field"><label>Move-ready cash target</label><input id="setMoveTarget" type="number" step="0.01"></div>
+        <div class="field"><label>Trip name</label><input id="setTripName"></div>
+        <div class="field"><label>Trip start</label><input id="setTripStart" type="date"></div>
+        <div class="field"><label>Trip end</label><input id="setTripEnd" type="date"></div>
+        <div class="field"><label>Trip budget</label><input id="setTripBudget" type="number" step="0.01"></div>
+      </div>
+      <button class="btn primary full" id="saveSettings" style="margin-top:12px">Save settings</button>
+    </div>
+    <div class="card">
+      <div class="section">Backup</div>
+      <div class="small" style="margin:5px 0 10px">Your GitHub repository does not receive these values.</div>
+      <div class="grid g2"><button class="btn" id="exportBtn">Export backup</button><button class="btn" id="importBtn">Import backup</button></div>
+      <textarea id="backupBox" placeholder="Backup JSON appears here." style="margin-top:10px"></textarea>
+    </div>
+    <div class="card"><button class="btn danger full" id="resetAll">Reset app and run setup again</button></div>
+  </section>
+</div>
+
+<nav class="nav">
+  <button class="active" data-view="todayView">Today</button>
+  <button data-view="calendarView">Calendar</button>
+  <button data-view="planView">Plan</button>
+  <button data-view="settingsView">Settings</button>
+</nav>
+</div>
+
+<div id="expenseModal" class="modalBack hidden"><div class="modal">
+  <div class="row"><div class="section">Add expense</div><button class="btn" data-close="expenseModal">Close</button></div>
+  <div class="small" id="expenseDateLabel" style="margin-top:4px"></div>
+  <div class="field" style="margin-top:12px"><label>Amount</label><input id="expenseAmount" type="number" min="0" step="0.01"></div>
+  <div class="field" style="margin-top:10px"><label>Category</label><select id="expenseCategory"><option>Groceries</option><option>Transport</option><option>Eating out</option><option>Shopping</option><option>Travel</option><option>Gifts</option><option>Bills</option><option>Other</option></select></div>
+  <div class="field" style="margin-top:10px"><label>Paid from</label><div class="radioRow"><label class="radioBtn"><input type="radio" name="source" value="current" checked>Current account</label><label class="radioBtn"><input type="radio" name="source" value="klarna">Klarna</label></div></div>
+  <div id="emiFields" class="hidden">
+    <div class="field" style="margin-top:10px"><label>Optional EMI / month</label><input id="expenseEmi" type="number" min="0" step="0.01"></div>
+    <div class="field" style="margin-top:10px"><label>First EMI date</label><input id="expenseEmiStart" type="date"></div>
+  </div>
+  <div class="field" style="margin-top:10px"><label>Note</label><input id="expenseNote"></div>
+  <button class="btn primary full" id="saveExpense" style="margin-top:12px">Save expense</button>
+</div></div>
+
+<div id="paymentModal" class="modalBack hidden"><div class="modal">
+  <div class="row"><div class="section">Pay Klarna</div><button class="btn" data-close="paymentModal">Close</button></div>
+  <div class="field" style="margin-top:12px"><label>Payment amount</label><input id="paymentAmount" type="number" min="0" step="0.01"></div>
+  <div class="small" id="paymentHint" style="margin-top:5px"></div>
+  <button class="btn primary full" id="savePayment" style="margin-top:12px">Record payment</button>
+</div></div>
+
+<div id="mandatoryModal" class="modalBack hidden"><div class="modal">
+  <div class="row"><div class="section">Mandatory Klarna due</div><button class="btn" data-close="mandatoryModal">Close</button></div>
+  <div id="mandatoryFields" style="margin-top:10px"></div>
+  <button class="btn primary full" id="saveMandatory" style="margin-top:12px">Save</button>
+</div></div>
+
+<div id="planModal" class="modalBack hidden"><div class="modal">
+  <div class="row"><div class="section">Add EMI plan</div><button class="btn" data-close="planModal">Close</button></div>
+  <div class="field" style="margin-top:12px"><label>Name</label><input id="planName"></div>
+  <div class="field" style="margin-top:10px"><label>Monthly EMI</label><input id="planEmi" type="number" min="0" step="0.01"></div>
+  <div class="field" style="margin-top:10px"><label>First EMI date</label><input id="planStart" type="date"></div>
+  <button class="btn primary full" id="savePlan" style="margin-top:12px">Add plan</button>
+</div></div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(()=>{
+"use strict";
+const STORAGE="moneyQuestPrivateV2";
+const EMPTY={configured:false,settings:{salary:0,current:0,emergency:0,gift:0,klarna:0,rent:0,education:0,personal:0,personalLeft:0,goalDate:"",newRent:0,moveTarget:0,tripName:"",tripStart:"",tripEnd:"",tripBudget:0},salaryDates:[],mandatoryKlarna:{},transactions:[],plans:[],wonDays:{}};
+let state=load(),selected=todayISO(),calendarMonth=todayISO().slice(0,7),expenseDate=selected;
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function load(){try{const x=JSON.parse(localStorage.getItem(STORAGE));return x?{...clone(EMPTY),...x,settings:{...EMPTY.settings,...(x.settings||{})}}:clone(EMPTY)}catch(e){return clone(EMPTY)}}
+function save(){localStorage.setItem(STORAGE,JSON.stringify(state))}
+function todayISO(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
+function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(Date.UTC(y,m-1,d))}
+function iso(d){return d.toISOString().slice(0,10)}
+function addDays(s,n){const d=parse(s);d.setUTCDate(d.getUTCDate()+n);return iso(d)}
+function diffDays(a,b){return Math.round((parse(b)-parse(a))/86400000)}
+function fmt(s){return parse(s).toLocaleDateString("en-SE",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"})}
+function money(n){return Number(n||0).toLocaleString("sv-SE",{maximumFractionDigits:2})+" kr"}
+function num(v){const n=Number(v);return Number.isFinite(n)?n:0}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function payday(y,m){const d=new Date(Date.UTC(y,m,25)),w=d.getUTCDay();if(w===6)d.setUTCDate(24);if(w===0)d.setUTCDate(23);return iso(d)}
+function buildSalaryDates(goal){const out=[],start=parse(todayISO()),g=parse(goal);let y=start.getUTCFullYear(),m=start.getUTCMonth();for(let i=0;i<18;i++){const p=payday(y,m);if(p>=todayISO()&&p<=goal)out.push(p);m++;if(m>11){m=0;y++}}return out}
+function previousSalary(d){let p=null;for(const x of state.salaryDates){if(x<=d)p=x;else break}return p}
+function nextSalaryDate(d){return state.salaryDates.find(x=>x>=d)||null}
+function cycleFor(d){const prev=previousSalary(d);if(!prev)return{start:todayISO(),end:state.salaryDates[0]?addDays(state.salaryDates[0],-1):state.settings.goalDate,index:-1};const i=state.salaryDates.indexOf(prev),end=i+1<state.salaryDates.length?addDays(state.salaryDates[i+1],-1):state.settings.goalDate;return{start:prev,end,index:i}}
+function fixedReserve(c){if(c.index<0)return 0;let r=num(state.settings.rent)+num(state.settings.education);if(c.index<num(state.settings.personalLeft))r+=num(state.settings.personal);if(c.index===state.salaryDates.length-1)r+=Math.max(0,num(state.settings.newRent)-num(state.settings.rent));r+=num(state.mandatoryKlarna[c.start]||0);return r}
+function tx(kind){return state.transactions.filter(t=>!kind||t.kind===kind)}
+function spentBetween(a,b){return tx("expense").filter(t=>t.date>=a&&t.date<=b).reduce((s,t)=>s+num(t.amount),0)}
+function spentOn(d){return spentBetween(d,d)}
+function cycleBase(c){return c.index<0?num(state.settings.current):Math.max(0,num(state.settings.salary)-fixedReserve(c))}
+function cycleSpent(c){return spentBetween(c.start,c.end)}
+function spendableLeft(d){const c=cycleFor(d);return Math.max(0,cycleBase(c)-cycleSpent(c))}
+function safeToday(d){const c=cycleFor(d),left=Math.max(0,cycleBase(c)-spentBetween(c.start,d)),days=Math.max(1,diffDays(d,c.end)+1);return left/days}
+function currentBalance(){let v=num(state.settings.current);for(const t of state.transactions){if(t.kind==="expense"&&t.source==="current")v-=num(t.amount);if(t.kind==="klarna_payment")v-=num(t.amount);if(t.kind==="salary")v+=num(t.amount)}return v}
+function klarnaBalance(){let v=num(state.settings.klarna);for(const t of state.transactions){if(t.kind==="expense"&&t.source==="klarna")v+=num(t.amount);if(t.kind==="klarna_payment")v-=num(t.amount)}return Math.max(0,v)}
+function tripSpend(){const s=state.settings;if(!s.tripStart||!s.tripEnd)return 0;return tx("expense").filter(t=>t.date>=s.tripStart&&t.date<=s.tripEnd).reduce((a,t)=>a+num(t.amount),0)}
+function phase(d){const s=state.settings;if(s.tripStart&&s.tripEnd&&d>=s.tripStart&&d<=s.tripEnd)return s.tripName||"Trip";if(s.goalDate&&d>=addDays(s.goalDate,-7))return"Moving week";return"Build the buffer"}
+function mission(d){const s=state.settings,c=cycleFor(d);if(s.tripStart&&s.tripEnd&&d>=s.tripStart&&d<=s.tripEnd)return"Log every trip expense and protect emergency savings.";if(c.index<0)return"Make your current account last until salary.";if(d===c.start)return"Salary day: reserve fixed commitments and mandatory Klarna first.";return"Stay below today's safe limit and keep the streak alive."}
+function streak(){let d=todayISO(),n=0;while(state.wonDays[d]){n++;d=addDays(d,-1)}return n}
+function xp(){return Object.values(state.wonDays).filter(Boolean).length*5+Math.floor(Math.max(0,num(state.settings.klarna)-klarnaBalance())/1000)*3}
+function toast(m){const e=document.getElementById("toast");e.textContent=m;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",1800)}
+function showSetup(n=1){onboarding.classList.remove("hidden");mainApp.classList.add("hidden");document.querySelectorAll(".step").forEach(s=>s.classList.toggle("active",s.dataset.step==n));setupStepPill.textContent=n+" / 3"}
+function showApp(){onboarding.classList.add("hidden");mainApp.classList.remove("hidden")}
+function showView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id));if(id==="settingsView")fillSettings()}
+function showModal(id){document.getElementById(id).classList.remove("hidden")}function closeModal(id){document.getElementById(id).classList.add("hidden")}
+
+function updateToday(){
+  todayDateBig.textContent=fmt(selected);phaseText.textContent=phase(selected);safeToday.textContent=money(window.safeToday(selected));spendableLeft.textContent=money(window.spendableLeft(selected));spentToday.textContent=money(spentOn(selected));
+  const ns=nextSalaryDate(selected);nextSalary.textContent=ns?(diffDays(selected,ns)===0?"Today":diffDays(selected,ns)+" days"):"—";
+  missionText.textContent=mission(selected);const won=!!state.wonDays[selected];missionStatus.textContent=won?"Won":"Open";missionStatus.className="pill "+(won?"good":"");completeDayBtn.textContent=won?"Undo win":"Mark today as won";
+  xpPill.textContent=xp()+" XP";streakPill.textContent=streak()+" day streak";
+  const c=cycleFor(selected),b=cycleBase(c),sp=cycleSpent(c);cycleDates.textContent=fmt(c.start)+" → "+fmt(c.end);cycleBudget.textContent=money(b);cycleSpent.textContent=money(sp);cycleBar.style.width=(b>0?Math.min(100,sp/b*100):0)+"%";
+  currentValue.textContent=money(currentBalance());emergencyValue.textContent=money(state.settings.emergency);giftValue.textContent=money(state.settings.gift);klarnaValue.textContent=money(klarnaBalance());const due=num(state.mandatoryKlarna[c.start]||0);klarnaSub.textContent=due?money(due)+" mandatory this cycle":"No mandatory amount entered this cycle";
+  const isSalary=state.salaryDates.includes(selected),already=state.transactions.some(t=>t.kind==="salary"&&t.date===selected);salaryBtn.classList.toggle("hidden",!isSalary||already);salaryBtn.textContent="Record "+money(state.settings.salary)+" salary";
+  renderTodayTxns();
+}
+window.safeToday=safeToday;window.spendableLeft=spendableLeft;
+function renderTodayTxns(){todayTxns.innerHTML="";const xs=state.transactions.filter(t=>t.date===selected);if(!xs.length){todayTxns.innerHTML='<div class="small">No activity logged today.</div>';return}xs.forEach(t=>{const e=document.createElement("div");e.className="txn";const title=t.kind==="expense"?t.category:t.kind==="salary"?"Salary received":"Klarna payment",meta=t.kind==="expense"?(t.source==="klarna"?"Klarna":"Current account")+(t.note?" · "+esc(t.note):""):t.kind==="salary"?"Added to current account":"From current account";e.innerHTML='<div><div>'+esc(title)+'</div><div class="meta">'+meta+'</div></div><div><strong>'+money(t.amount)+'</strong><br><button class="btn danger" data-del="'+t.id+'" style="min-height:32px;padding:4px 8px;margin-top:5px">Delete</button></div>';todayTxns.appendChild(e)});todayTxns.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{state.transactions=state.transactions.filter(t=>t.id!==b.dataset.del);save();refresh()})}
+function renderCalendar(){const [y,m]=calendarMonth.split("-").map(Number);monthTitle.textContent=new Date(Date.UTC(y,m-1,1)).toLocaleDateString("en-SE",{month:"long",year:"numeric",timeZone:"UTC"});calendar.innerHTML="";["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(x=>{const e=document.createElement("div");e.className="dow";e.textContent=x;calendar.appendChild(e)});const first=new Date(Date.UTC(y,m-1,1)),offset=(first.getUTCDay()+6)%7,days=new Date(Date.UTC(y,m,0)).getUTCDate();for(let i=0;i<offset;i++)calendar.appendChild(document.createElement("div"));for(let d=1;d<=days;d++){const s=y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0"),e=document.createElement("button");e.type="button";e.className="day"+(s===selected?" sel":"");const sp=spentOn(s);e.innerHTML='<div class="n">'+d+'</div><div class="s">'+(sp?money(sp):Math.round(safeToday(s))+" safe")+'</div>';e.onclick=()=>{selected=s;renderCalendar();updateToday()};calendar.appendChild(e)}selectedDateLabel.textContent=fmt(selected);selectedSpent.textContent=money(spentOn(selected));selectedSafe.textContent=money(safeToday(selected))}
+function renderPlan(){milestones.innerHTML="";const ms=state.salaryDates.map((d,i)=>({d,t:"Salary "+(i+1)}));if(state.settings.tripStart)ms.push({d:state.settings.tripStart,t:state.settings.tripName||"Trip"});if(state.settings.goalDate)ms.push({d:state.settings.goalDate,t:"Goal date"});ms.sort((a,b)=>a.d.localeCompare(b.d));ms.forEach(m=>{const e=document.createElement("div");e.className="milestone";e.innerHTML='<div class="row"><strong>'+esc(m.t)+'</strong><span class="small">'+fmt(m.d)+'</span></div>';milestones.appendChild(e)});mandatoryList.innerHTML="";state.salaryDates.forEach(d=>{const e=document.createElement("div");e.className="milestone";e.innerHTML='<div class="row"><span>'+fmt(d)+'</span><strong>'+money(state.mandatoryKlarna[d]||0)+'</strong></div>';mandatoryList.appendChild(e)});klarnaPlans.innerHTML=state.plans.length?"":'<div class="small" style="margin-top:8px">No EMI plan added yet.</div>';state.plans.forEach(p=>{const e=document.createElement("div");e.className="milestone";e.innerHTML='<div class="row"><div><strong>'+esc(p.name)+'</strong><div class="small">Starts '+fmt(p.start)+'</div></div><strong>'+money(p.emi)+'/mo</strong></div>';klarnaPlans.appendChild(e)});const s=state.settings,show=s.tripStart&&s.tripEnd;tripCard.classList.toggle("hidden",!show);if(show){tripTitle.textContent=s.tripName||"Trip";tripSpent.textContent=money(tripSpend());tripBudgetDisplay.textContent=money(s.tripBudget);tripBar.style.width=num(s.tripBudget)>0?Math.min(100,tripSpend()/num(s.tripBudget)*100)+"%":"0%"}}
+function fillSettings(){const s=state.settings;setSalary.value=s.salary;setCurrent.value=s.current;setEmergency.value=s.emergency;setGift.value=s.gift;setKlarna.value=s.klarna;setRent.value=s.rent;setEducation.value=s.education;setPersonal.value=s.personal;setPersonalLeft.value=s.personalLeft;setGoalDate.value=s.goalDate;setNewRent.value=s.newRent;setMoveTarget.value=s.moveTarget;setTripName.value=s.tripName;setTripStart.value=s.tripStart;setTripEnd.value=s.tripEnd;setTripBudget.value=s.tripBudget}
+function refresh(){updateToday();renderCalendar();renderPlan()}
+
+document.querySelectorAll("[data-next]").forEach(b=>b.onclick=()=>showSetup(Number(b.dataset.next)));document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>showSetup(Number(b.dataset.back)));
+finishSetup.onclick=()=>{if(!obGoalDate.value){toast("Choose a goal date");return}state.settings={salary:num(obSalary.value),current:num(obCurrent.value),emergency:num(obEmergency.value),gift:num(obGift.value),klarna:num(obKlarna.value),rent:num(obRent.value),education:num(obEducation.value),personal:num(obPersonal.value),personalLeft:Math.max(0,Math.round(num(obPersonalLeft.value))),goalDate:obGoalDate.value,newRent:num(obNewRent.value),moveTarget:num(obMoveTarget.value),tripName:obTripName.value.trim(),tripStart:obTripStart.value,tripEnd:obTripEnd.value,tripBudget:num(obTripBudget.value)};state.salaryDates=buildSalaryDates(obGoalDate.value);state.configured=true;save();selected=todayISO();calendarMonth=selected.slice(0,7);showApp();refresh()};
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+quickAddBtn.onclick=()=>{expenseDate=selected;expenseDateLabel.textContent=fmt(expenseDate);showModal("expenseModal")};addForSelected.onclick=quickAddBtn.onclick;
+document.querySelectorAll('input[name="source"]').forEach(r=>r.onchange=()=>emiFields.classList.toggle("hidden",document.querySelector('input[name="source"]:checked').value!=="klarna"));
+saveExpense.onclick=()=>{const amount=num(expenseAmount.value);if(amount<=0){toast("Enter an amount");return}const source=document.querySelector('input[name="source"]:checked').value;state.transactions.push({id:uid(),kind:"expense",date:expenseDate,amount,category:expenseCategory.value,source,note:expenseNote.value.trim()});if(source==="klarna"&&num(expenseEmi.value)>0&&expenseEmiStart.value)state.plans.push({id:uid(),name:expenseNote.value.trim()||expenseCategory.value,emi:num(expenseEmi.value),start:expenseEmiStart.value});expenseAmount.value="";expenseNote.value="";expenseEmi.value="";expenseEmiStart.value="";save();closeModal("expenseModal");refresh();toast("Expense saved")};
+salaryBtn.onclick=()=>{if(state.transactions.some(t=>t.kind==="salary"&&t.date===selected)){toast("Salary already recorded");return}state.transactions.push({id:uid(),kind:"salary",date:selected,amount:num(state.settings.salary)});save();refresh();toast("Salary recorded")};
+addPaymentBtn.onclick=()=>{const c=cycleFor(selected),due=num(state.mandatoryKlarna[c.start]||0);paymentAmount.value=due||"";paymentHint.textContent=due?("Mandatory this cycle: "+money(due)):"No mandatory amount entered.";showModal("paymentModal")};
+savePayment.onclick=()=>{const a=num(paymentAmount.value);if(a<=0){toast("Enter an amount");return}if(a>currentBalance()){toast("Higher than tracked current-account balance");return}state.transactions.push({id:uid(),kind:"klarna_payment",date:selected,amount:a});save();closeModal("paymentModal");refresh();toast("Klarna payment recorded")};
+completeDayBtn.onclick=()=>{state.wonDays[selected]=!state.wonDays[selected];save();refresh()};
+prevMonth.onclick=()=>{let[y,m]=calendarMonth.split("-").map(Number);m--;if(m<1){m=12;y--}calendarMonth=y+"-"+String(m).padStart(2,"0");renderCalendar()};nextMonth.onclick=()=>{let[y,m]=calendarMonth.split("-").map(Number);m++;if(m>12){m=1;y++}calendarMonth=y+"-"+String(m).padStart(2,"0");renderCalendar()};
+editMandatoryBtn.onclick=()=>{mandatoryFields.innerHTML="";state.salaryDates.forEach(d=>{const w=document.createElement("div");w.className="field";w.style.marginTop="10px";w.innerHTML='<label>'+fmt(d)+'</label><input type="number" step="0.01" data-md="'+d+'" value="'+num(state.mandatoryKlarna[d]||0)+'">';mandatoryFields.appendChild(w)});showModal("mandatoryModal")};
+saveMandatory.onclick=()=>{document.querySelectorAll("[data-md]").forEach(i=>state.mandatoryKlarna[i.dataset.md]=Math.max(0,num(i.value)));save();closeModal("mandatoryModal");refresh();toast("Mandatory amounts saved")};
+newPlanBtn.onclick=()=>showModal("planModal");savePlan.onclick=()=>{if(!planName.value.trim()||num(planEmi.value)<=0||!planStart.value){toast("Enter name, EMI and first date");return}state.plans.push({id:uid(),name:planName.value.trim(),emi:num(planEmi.value),start:planStart.value});planName.value="";planEmi.value="";planStart.value="";save();closeModal("planModal");refresh();toast("Plan added")};
+saveSettings.onclick=()=>{state.settings={salary:num(setSalary.value),current:num(setCurrent.value),emergency:num(setEmergency.value),gift:num(setGift.value),klarna:num(setKlarna.value),rent:num(setRent.value),education:num(setEducation.value),personal:num(setPersonal.value),personalLeft:Math.max(0,Math.round(num(setPersonalLeft.value))),goalDate:setGoalDate.value,newRent:num(setNewRent.value),moveTarget:num(setMoveTarget.value),tripName:setTripName.value.trim(),tripStart:setTripStart.value,tripEnd:setTripEnd.value,tripBudget:num(setTripBudget.value)};state.salaryDates=buildSalaryDates(state.settings.goalDate);save();refresh();toast("Settings saved")};
+exportBtn.onclick=()=>{backupBox.value=JSON.stringify(state,null,2);backupBox.focus();backupBox.select();toast("Backup ready")};importBtn.onclick=()=>{try{const x=JSON.parse(backupBox.value);state={...clone(EMPTY),...x,settings:{...EMPTY.settings,...(x.settings||{})}};save();refresh();toast("Backup imported")}catch(e){toast("Invalid backup JSON")}};
+resetAll.onclick=()=>{if(confirm("Reset all data on this device?")){localStorage.removeItem(STORAGE);state=clone(EMPTY);showSetup(1)}};
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+if(state.configured){showApp();refresh()}else{showSetup(1)}
+})();
+</script>
+</body>
+</html>
